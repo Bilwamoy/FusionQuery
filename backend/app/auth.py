@@ -26,12 +26,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.access_token_expire_minutes))
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.algorithm)
 
 
 def decode_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.algorithm])
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

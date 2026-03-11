@@ -1,62 +1,21 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { auth as authApi } from '@/lib/api';
-import { useRouter, usePathname } from 'next/navigation';
+import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
-const PUBLIC_PATHS = ['/login', '/signup', '/shared'];
+// Auth bypassed — no login/signup required for now
+const MOCK_USER = { id: 'guest', name: 'Guest User', email: 'guest@example.com' };
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
+  const [user] = useState(MOCK_USER);
 
-  useEffect(() => {
-    const savedUser = authApi.getUser();
-    const token = authApi.getToken();
-
-    if (savedUser && token) {
-      setUser(savedUser);
-      // Verify token is still valid
-      authApi.me()
-        .then(u => setUser(u))
-        .catch(() => {
-          setUser(null);
-          const isPublic = PUBLIC_PATHS.some(p => pathname?.startsWith(p));
-          if (!isPublic) router.push('/login');
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-      const isPublic = PUBLIC_PATHS.some(p => pathname?.startsWith(p));
-      if (!isPublic && pathname !== '/login') {
-        router.push('/login');
-      }
-    }
-  }, []);
-
-  const login = async (email, password) => {
-    const data = await authApi.login({ email, password });
-    setUser(data.user);
-    return data;
-  };
-
-  const register = async (name, email, password) => {
-    const data = await authApi.register({ name, email, password });
-    setUser(data.user);
-    return data;
-  };
-
-  const logout = () => {
-    authApi.logout();
-    setUser(null);
-  };
+  const login = async () => ({ user: MOCK_USER });
+  const register = async () => ({ user: MOCK_USER });
+  const logout = () => {};
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, loading: false, login, register, logout, isAuthenticated: true }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,10 +3,13 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    secret_key: str = "collabmind-dev-secret-key-change-in-production-minimum-32-chars"
+    jwt_secret_key: str = "collabmind-dev-secret-key-change-in-production-minimum-32-chars"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 10080
-    database_url: str = "sqlite:///./collabmind.db"
+    database_url: str = "postgresql://collabmind:password@localhost:5432/collabmind_db"
+    postgres_user: str = "collabmind"
+    postgres_password: str = "password"
+    postgres_db: str = "collabmind_db"
     upload_dir: str = "./uploads"
     max_file_size_mb: int = 50
     openai_api_key: str = "mock"

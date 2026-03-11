@@ -205,14 +205,17 @@ export default function LoginPage() {
           {/* OAuth buttons */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
             {[
-              { icon: Chrome, label: 'Google' },
-              { icon: Github, label: 'GitHub' },
-            ].map(({ icon: Icon, label }) => (
+              { icon: Chrome, label: 'Google', provider: 'google' },
+              { icon: Github, label: 'GitHub', provider: 'github' },
+            ].map(({ icon: Icon, label, provider }) => (
               <motion.button
                 key={label}
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setError('OAuth coming soon. Use email/password for now.')}
+                onClick={() => {
+                  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+                  window.location.href = `${apiUrl}/auth/${provider}/login`;
+                }}
                 style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   padding: '11px 0', borderRadius: 14, border: '1px solid rgba(255,255,255,0.12)',

@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import engine
 from app.models import Base
 from app.config import get_settings
-from app.routers import auth, projects, files, chat, whiteboard, gallery
+from app.routers import auth, projects, files, chat, whiteboard, gallery, oauth
 
 settings = get_settings()
 
@@ -54,6 +54,7 @@ app.include_router(files.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(whiteboard.router, prefix="/api")
 app.include_router(gallery.router, prefix="/api")
+app.include_router(oauth.router, prefix="/api")
 
 
 @app.get("/")
