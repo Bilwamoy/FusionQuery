@@ -37,6 +37,7 @@ const AI_PROMPTS = [
 export default function WhiteboardPage() {
   const canvasRef = useRef(null);
   const fabricRef = useRef(null);
+  const fabricModuleRef = useRef(null);
   const [activeTool, setActiveTool] = useState('pen');
   const [activeColor, setActiveColor] = useState('#7c3aed');
   const [strokeWidth, setStrokeWidth] = useState(4);
@@ -46,24 +47,27 @@ export default function WhiteboardPage() {
   const [zoom, setZoom] = useState(100);
 
   useEffect(() => {
-    let fabric;
     const init = async () => {
       try {
-        const { fabric: fb } = await import('fabric');
-        fabric = fb;
+        const fabric = await import('fabric');
+        fabricModuleRef.current = fabric;
         if (!canvasRef.current) return;
+
+        // Dispose previous canvas if it exists (React strict mode double-mount)
+        if (fabricRef.current) {
+          fabricRef.current.dispose();
+          fabricRef.current = null;
+        }
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
         const canvas = new fabric.Canvas(canvasRef.current, {
           width: window.innerWidth - 360,
           height: window.innerHeight - 60,
-          backgroundColor: 'var(--whiteboard-bg)',
+          backgroundColor: isDark ? '#f5f2e8' : '#fdfcff',
           isDrawingMode: true,
           selection: true,
         });
-
-        // Apply whiteboard background color from CSS var
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        canvas.setBackgroundColor(isDark ? '#f5f2e8' : '#fdfcff', canvas.renderAll.bind(canvas));
 
         // Grid lines
         const drawGrid = () => {
@@ -88,8 +92,7 @@ export default function WhiteboardPage() {
         fabricRef.current = canvas;
 
         const handleResize = () => {
-          canvas.setWidth(window.innerWidth - 360);
-          canvas.setHeight(window.innerHeight - 60);
+          canvas.setDimensions({ width: window.innerWidth - 360, height: window.innerHeight - 60 });
           canvas.renderAll();
         };
         window.addEventListener('resize', handleResize);
@@ -111,8 +114,14 @@ export default function WhiteboardPage() {
     if (!canvas) return;
     canvas.isDrawingMode = activeTool === 'pen';
     if (canvas.isDrawingMode) {
-      canvas.freeDrawingBrush.color = activeColor;
-      canvas.freeDrawingBrush.width = strokeWidth;
+      if (!canvas.freeDrawingBrush) {
+        const fb = fabricModuleRef.current;
+        if (fb) canvas.freeDrawingBrush = new fb.PencilBrush(canvas);
+      }
+      if (canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.color = activeColor;
+        canvas.freeDrawingBrush.width = strokeWidth;
+      }
     }
   }, [activeTool, activeColor, strokeWidth]);
 
@@ -124,20 +133,23 @@ export default function WhiteboardPage() {
     canvas.isDrawingMode = toolId === 'pen';
     canvas.selection = toolId === 'select';
 
+    const fb = fabricModuleRef.current;
+    if (!fb) return;
+
     if (toolId === 'rect') {
-      const rect = new (window.fabric?.Rect || class {})({
+      const rect = new fb.Rect({
         left: 200, top: 200, width: 160, height: 100,
         fill: 'transparent', stroke: activeColor, strokeWidth, rx: 10, ry: 10,
       });
       canvas.add(rect);
     } else if (toolId === 'circle') {
-      const circle = new (window.fabric?.Circle || class {})({
+      const circle = new fb.Circle({
         left: 220, top: 220, radius: 60,
         fill: 'transparent', stroke: activeColor, strokeWidth,
       });
       canvas.add(circle);
     } else if (toolId === 'text') {
-      const text = new (window.fabric?.IText || class {})('Type here...', {
+      const text = new fb.IText('Type here...', {
         left: 200, top: 200, fontSize: 18, fontFamily: 'Plus Jakarta Sans',
         fill: activeColor, editable: true,
       });
@@ -145,12 +157,12 @@ export default function WhiteboardPage() {
       canvas.setActiveObject(text);
       text.enterEditing();
     } else if (toolId === 'sticky') {
-      const rect = new (window.fabric?.Rect || class {})({
+      const rect = new fb.Rect({
         left: 200, top: 200, width: 160, height: 140,
         fill: '#fef9c3', stroke: '#f59e0b', strokeWidth: 1, rx: 12, ry: 12,
-        shadow: new (window.fabric?.Shadow || class {})({ color: 'rgba(0,0,0,0.15)', blur: 10, offsetX: 2, offsetY: 4 }),
+        shadow: new fb.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 10, offsetX: 2, offsetY: 4 }),
       });
-      const text = new (window.fabric?.Text || class {})('Note...', {
+      const text = new fb.Text('Note...', {
         left: 216, top: 220, fontSize: 14, fontFamily: 'Plus Jakarta Sans', fill: '#92400e'
       });
       canvas.add(rect, text);
@@ -160,7 +172,7 @@ export default function WhiteboardPage() {
 
   const handleClear = () => {
     const canvas = fabricRef.current;
-    if (canvas) { canvas.clear(); canvas.setBackgroundColor('#fdfcff', canvas.renderAll.bind(canvas)); }
+    if (canvas) { canvas.clear(); canvas.backgroundColor = '#fdfcff'; canvas.renderAll(); }
   };
 
   const handleUndo = () => {
@@ -186,9 +198,10 @@ export default function WhiteboardPage() {
         { x: 500, y: 220, label: 'LLM Generation', color: '#f43f5e' },
       ];
 
-      nodes.forEach(async ({ x, y, label, color }) => {
+      nodes.forEach(({ x, y, label, color }) => {
         try {
-          const { fabric: fb } = await import('fabric');
+          const fb = fabricModuleRef.current;
+          if (!fb) return;
           const rect = new fb.Rect({
             left: x, top: y, width: 140, height: 52,
             fill: color + '20', stroke: color, strokeWidth: 2, rx: 12, ry: 12,
