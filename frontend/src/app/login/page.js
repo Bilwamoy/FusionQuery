@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Sphere, MeshDistortMaterial, Stars } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, User, Sparkles, Github, Chrome, AlertCircle } from 'lucide-react';
 import * as THREE from 'three';
-import { auth as authApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 /* ─── 3D Background ─── */
 function FloatingBlob({ position, color, speed, distort }) {
@@ -73,6 +73,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const router = useRouter();
+  const { login, register, isAuthenticated } = useAuth();
+
+  // If already logged in, redirect away from login page
+  useEffect(() => {
+    if (isAuthenticated) router.replace('/');
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,10 +86,10 @@ export default function LoginPage() {
     setError('');
     try {
       if (tab === 'login') {
-        await authApi.login({ email: form.email, password: form.password });
+        await login({ email: form.email, password: form.password });
       } else {
         if (!form.name.trim()) { setError('Full name is required'); setLoading(false); return; }
-        await authApi.register({ name: form.name, email: form.email, password: form.password });
+        await register({ name: form.name, email: form.email, password: form.password });
       }
       router.push('/');
     } catch (err) {

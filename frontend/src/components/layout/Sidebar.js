@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePathname } from 'next/navigation';
 import {
   MessageSquare, Users, FolderKanban, Image, History,
@@ -59,6 +60,7 @@ const recentChats = [
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <motion.aside
@@ -238,6 +240,7 @@ export default function Sidebar() {
       <div style={{ padding: '12px 8px 0', borderTop: '1px solid var(--sidebar-border)' }}>
         <motion.div
           whileHover={{ x: 1 }}
+          onClick={logout}
           style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '10px 8px', borderRadius: 12, cursor: 'pointer',
@@ -252,7 +255,7 @@ export default function Sidebar() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 700, fontSize: 13, color: 'white', flexShrink: 0
           }}>
-            S
+            {user?.name?.charAt(0)?.toUpperCase() || '?'}
           </div>
           {!collapsed && (
             <motion.div
@@ -260,8 +263,8 @@ export default function Sidebar() {
               animate={{ opacity: 1 }}
               style={{ overflow: 'hidden' }}
             >
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Sourav</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Free Plan</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{user?.name || 'Guest'}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Sign out</div>
             </motion.div>
           )}
         </motion.div>

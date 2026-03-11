@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -10,6 +11,7 @@ function CallbackHandler() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [status, setStatus] = useState('Processing login...');
+    const { syncFromStorage } = useAuth();
 
     useEffect(() => {
         const token = searchParams.get('token');
@@ -34,6 +36,7 @@ function CallbackHandler() {
             })
             .then((user) => {
                 localStorage.setItem('collabmind_user', JSON.stringify(user));
+                syncFromStorage();
                 setStatus('Login successful! Redirecting...');
                 router.push('/');
             })
